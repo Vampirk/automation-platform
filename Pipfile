@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+apscheduler = "~=3.10.4"
+psutil = "~=5.9.6"
+sqlalchemy = "~=2.0.23"
+pydantic = "~=2.5.0"
+pydantic-settings = "~=2.1.0"
+python-dotenv = "~=1.0.0"
+loguru = "~=0.7.2"
+fastapi = "~=0.104.1"
+uvicorn = {extras = ["standard"], version = "~=0.24.0"}
+requests = "~=2.31.0"
+
+[dev-packages]
+pytest = "~=7.4.3"
+pytest-asyncio = "~=0.21.1"
+black = "~=23.11.0"
+flake8 = "~=6.1.0"
+mypy = "~=1.7.1"
+
+[requires]
+python_version = "3.10"
