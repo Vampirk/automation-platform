@@ -1,46 +1,99 @@
-# 🤖 Automation Platform
+# 🚀 Automation Platform
 
-보안 운영 및 시스템 관리 작업 자동화 플랫폼
+**크로스 플랫폼 시스템 자동화 및 모니터링 플랫폼**
 
-## 📋 개요
+Python 기반의 강력한 자동화 플랫폼으로 시스템 모니터링, 보안 점검, 로그 분석 등을 자동화합니다.
 
-반복적인 보안 운영 및 시스템 관리 작업을 자동화하여 휴먼 에러를 최소화하고,
-보안 담당자가 고부가가치 업무에 집중할 수 있도록 지원하는 플랫폼입니다.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Progress](https://img.shields.io/badge/progress-37.5%25-orange.svg)](README.md)
 
-### 주요 기능
+---
 
-- ✅ **크로스 플랫폼 지원**: Windows/Linux 모두에서 동작
-- ⏰ **Cron 스타일 스케줄링**: 유연한 작업 스케줄 설정
-- 🔄 **자동 재시도**: 실패 시 자동 재시도 메커니즘
-- 📊 **실행 이력 관리**: 모든 작업 실행 결과 저장
-- 📝 **구조화된 로깅**: 상세한 로그 기록 및 분석
-- 🖥️ **시스템 모니터링**: CPU/메모리/디스크 사용률 체크
-- 🚨 **임계치 알림**: 설정된 임계치 초과 시 자동 알림
+## 📊 **프로젝트 진행 상황**
 
-## 🚀 빠른 시작
+```
+Phase 1: 핵심 인프라         ████████████████████ 100% ✅
+Phase 2: 자동화 스크립트     ██████████░░░░░░░░░░  50% 🔄
+Phase 3: 알림 시스템         ░░░░░░░░░░░░░░░░░░░░   0% 📋
+Phase 4: 웹 대시보드         ░░░░░░░░░░░░░░░░░░░░   0% 📋
 
-### 1. 환경 설정
-
-```bash
-# Python 3.10+ 필요
-python --version
-
-# pipenv 설치 (없는 경우)
-pip install pipenv
-
-# 의존성 설치
-cd automation-platform
-pipenv install
-
-# 개발 의존성 포함 설치
-pipenv install --dev
+전체 진행도                  ████████░░░░░░░░░░░░  37.5%
 ```
 
-### 2. 환경 변수 설정
+---
 
-`.env` 파일을 수정하여 필요한 설정을 변경하세요:
+## ✨ **주요 기능**
+
+### ✅ **구현 완료**
+
+#### 🔧 **핵심 인프라**
+- ✅ 크로스 플랫폼 지원 (Windows/Linux)
+- ✅ 작업 스케줄러 (APScheduler + Cron 표현식)
+- ✅ 작업 실행기 (Python/Bash/PowerShell/Batch)
+- ✅ 구조화된 로깅 시스템 (Loguru)
+- ✅ 데이터베이스 관리 (SQLAlchemy ORM)
+- ✅ 설정 관리 (Pydantic + 환경 변수)
+
+#### 📈 **시스템 모니터링**
+- ✅ CPU/메모리/디스크/네트워크 모니터링
+- ✅ 임계치 기반 경고
+- ✅ 메트릭 데이터베이스 저장
+- ✅ 자동 실행 및 로깅
+
+#### 🛡️ **보안 점검**
+- ✅ 종합 보안 점검 (파일 권한, SSH 설정, 방화벽)
+- ✅ 포트 스캔 (멀티스레드, 위험 포트 탐지)
+- ✅ 파일 권한 검사 (World-writable, SUID/SGID)
+- ✅ SSH 키 권한 검증
+- ✅ 보안 점수 산출 (0-100)
+- ✅ 데이터베이스 자동 저장
+
+### 🔄 **진행 중**
+- 🔄 로그 분석 스크립트
+- 🔄 계정 관리 스크립트
+
+### 📋 **예정**
+- 📋 이메일/Slack 알림 시스템
+- 📋 웹 대시보드 (FastAPI + React/Vue)
+- 📋 CVE 취약점 스캔
+- 📋 자동 백업 스크립트
+
+---
+
+## 🚀 **빠른 시작**
+
+### **1. 요구 사항**
+- Python 3.10 이상
+- pipenv (권장) 또는 pip
+- SQLite (기본) 또는 PostgreSQL
+
+### **2. 설치**
 
 ```bash
+# 저장소 클론
+git clone https://github.com/Vampirk/automation-platform.git
+cd automation-platform
+
+# 가상환경 생성 및 의존성 설치
+pipenv install
+# 또는
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+```
+
+### **3. 환경 설정**
+
+`.env` 파일 편집:
+```bash
+cp .env.example .env
+nano .env
+```
+
+주요 설정:
+```env
 # 데이터베이스
 DATABASE_URL=sqlite:///./data/automation.db
 
@@ -54,71 +107,130 @@ MEMORY_THRESHOLD=85
 DISK_THRESHOLD=90
 ```
 
-### 3. 실행
+### **4. 실행**
 
+#### **메인 애플리케이션 (스케줄러)**
 ```bash
-# pipenv 가상환경에서 실행
-pipenv run python main.py
-
-# 또는 가상환경 활성화 후 실행
-pipenv shell
+# 모든 등록된 작업 자동 실행
 python main.py
 ```
 
-## 📁 프로젝트 구조
+#### **개별 스크립트 실행**
+```bash
+# 시스템 모니터링
+python scripts/monitoring/system_monitor.py
+
+# 보안 점검
+python scripts/security/security_checker.py
+
+# 포트 스캔 (빠른 스캔)
+python scripts/security/port_scanner.py --mode quick
+
+# 파일 권한 검사
+python scripts/security/permission_checker.py --mode critical
+```
+
+---
+
+## 📁 **프로젝트 구조**
 
 ```
 automation-platform/
-├── main.py                 # 메인 진입점
-├── config/                 # 설정 관리
+├── main.py                      # 메인 진입점 (스케줄러 실행)
+├── config/                      # 설정 관리
 │   ├── __init__.py
-│   └── settings.py        # 전역 설정
-├── core/                   # 핵심 엔진
+│   └── settings.py             # 전역 설정 (Pydantic)
+├── core/                        # 핵심 엔진
 │   ├── __init__.py
-│   ├── logger.py          # 로깅 시스템
-│   ├── scheduler.py       # 작업 스케줄러
-│   └── executor.py        # 작업 실행기
-├── storage/                # 데이터 저장
+│   ├── logger.py               # 로깅 시스템
+│   ├── scheduler.py            # 작업 스케줄러
+│   └── executor.py             # 작업 실행기
+├── storage/                     # 데이터 저장
 │   ├── __init__.py
-│   ├── database.py        # DB 연결 관리
-│   └── models.py          # 데이터 모델
-├── scripts/                # 자동화 스크립트
-│   ├── monitoring/        # 시스템 모니터링
+│   ├── database.py             # DB 연결 관리
+│   └── models.py               # 데이터 모델 (ORM)
+├── scripts/                     # 자동화 스크립트
+│   ├── monitoring/             # 시스템 모니터링 ✅
 │   │   └── system_monitor.py
-│   ├── security/          # 보안 점검
-│   ├── log_analysis/      # 로그 분석
-│   └── account_mgmt/      # 계정 관리
-├── notification/           # 알림 시스템
-├── logs/                   # 로그 파일
-├── data/                   # 데이터베이스 파일
-├── .env                    # 환경 변수
-└── Pipfile                 # 의존성 정의
+│   ├── security/               # 보안 점검 ✅
+│   │   ├── security_checker.py
+│   │   ├── port_scanner.py
+│   │   ├── permission_checker.py
+│   │   └── README.md
+│   ├── log_analysis/           # 로그 분석 🔄
+│   ├── account_mgmt/           # 계정 관리 🔄
+│   └── maintenance/            # 유지보수 📋
+├── notification/                # 알림 시스템 📋
+├── dashboard/                   # 웹 대시보드 📋
+├── logs/                        # 로그 파일
+├── data/                        # 데이터베이스 파일
+├── .env                         # 환경 변수
+├── Pipfile                      # 의존성 정의
+└── README.md                    # 이 파일
 ```
 
-## 🔧 사용 방법
+**범례:**
+- ✅ 구현 완료
+- 🔄 진행 중
+- 📋 예정
 
-### 작업 등록
+---
 
-데이터베이스에 직접 작업을 등록할 수 있습니다:
+## 📚 **사용 가이드**
+
+### **작업 등록 및 스케줄링**
+
+#### **방법 1: 데이터베이스에 직접 등록**
 
 ```python
 from storage import db, Job, JobType
 
 with db.session_scope() as session:
-    job = Job(
-        name="my_custom_job",
-        description="커스텀 작업 설명",
-        job_type=JobType.CUSTOM,
-        script_path="scripts/my_script.py",
-        cron_expression="0 * * * *",  # 매시간
+    # 매일 자정 시스템 모니터링
+    monitoring_job = Job(
+        name="daily_monitoring",
+        description="일일 시스템 모니터링",
+        job_type=JobType.MONITORING,
+        script_path="scripts/monitoring/system_monitor.py",
+        cron_expression="0 0 * * *",  # 매일 자정
         enabled=True,
         timeout_seconds=300,
         priority=5
     )
-    session.add(job)
+    session.add(monitoring_job)
+    
+    # 매일 자정 보안 점검
+    security_job = Job(
+        name="daily_security_check",
+        description="일일 보안 점검",
+        job_type=JobType.SECURITY,
+        script_path="scripts/security/security_checker.py",
+        cron_expression="0 0 * * *",  # 매일 자정
+        enabled=True,
+        timeout_seconds=300,
+        priority=9
+    )
+    session.add(security_job)
 ```
 
-### Cron 표현식 예시
+#### **방법 2: Python 스크립트로 등록**
+
+```bash
+python -c "
+from storage import db, Job, JobType
+with db.session_scope() as session:
+    job = Job(
+        name='hourly_monitoring',
+        job_type=JobType.MONITORING,
+        script_path='scripts/monitoring/system_monitor.py',
+        cron_expression='0 * * * *',
+        enabled=True
+    )
+    session.add(job)
+"
+```
+
+### **Cron 표현식 예시**
 
 ```
 */5 * * * *     # 5분마다
@@ -126,169 +238,215 @@ with db.session_scope() as session:
 0 0 * * *       # 매일 자정
 0 0 * * 0       # 매주 일요일 자정
 0 9-17 * * 1-5  # 월~금 오전 9시~오후 5시
+0 0 1 * *       # 매월 1일 자정
+*/15 9-17 * * * # 평일 근무 시간에 15분마다
 ```
 
-### 스크립트 작성 가이드
+---
 
-```python
-#!/usr/bin/env python3
-import sys
-from pathlib import Path
+## 🔧 **스크립트 상세 가이드**
 
-# 프로젝트 루트를 sys.path에 추가
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+### **1. 시스템 모니터링**
 
-from core.logger import get_logger
+```bash
+# 기본 실행
+python scripts/monitoring/system_monitor.py
 
-logger = get_logger()
-
-def main():
-    logger.info("스크립트 시작")
-    
-    # 작업 수행
-    # ...
-    
-    logger.info("스크립트 완료")
-    return 0
-
-if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+# 출력 예시:
+# 📊 System Metrics:
+#    CPU: 45.2% (8 cores)
+#    Memory: 8.5GB / 16.0GB (53.1%)
+#    Disk: 120.3GB / 500.0GB (24.1%)
+#    Network: ↑ 1024.5MB / ↓ 2048.3MB
 ```
 
-## 🛠️ 개발
+**경고 기준:**
+- CPU > 80%
+- 메모리 > 85%
+- 디스크 > 90%
 
-### 테스트 실행
+### **2. 보안 점검**
 
+#### **종합 보안 점검**
+```bash
+# sudo 권장 (전체 점검)
+sudo python scripts/security/security_checker.py
+
+# 일반 사용자 (일부 점검 스킵)
+python scripts/security/security_checker.py
+```
+
+**점검 항목:**
+- ✅ 파일 권한 (/etc/passwd, /etc/shadow 등)
+- ✅ SSH 설정 (PermitRootLogin, PasswordAuthentication)
+- ✅ 열린 포트
+- ✅ 비밀번호 정책 (PASS_MAX_DAYS, PASS_MIN_DAYS)
+- ✅ 방화벽 상태
+
+**보안 점수:**
+- 90-100: 우수
+- 70-89: 양호
+- 50-69: 보통
+- 0-49: 취약
+
+#### **포트 스캔**
+```bash
+# 일반 포트 빠른 스캔 (20개 주요 포트)
+python scripts/security/port_scanner.py --mode quick
+
+# 범위 스캔 (1-1024)
+python scripts/security/port_scanner.py --mode range --start-port 1 --end-port 1024
+
+# 전체 스캔 (1-65535, 시간 오래 걸림)
+python scripts/security/port_scanner.py --mode full
+
+# 원격 서버 스캔
+python scripts/security/port_scanner.py --target 192.168.1.100 --mode quick
+```
+
+#### **파일 권한 검사**
+```bash
+# 중요 시스템 파일만
+python scripts/security/permission_checker.py --mode critical
+
+# World-writable 파일 검색
+sudo python scripts/security/permission_checker.py --mode world-writable --directory /home
+
+# SUID/SGID 파일 검색
+sudo python scripts/security/permission_checker.py --mode suid --directory /usr/bin
+
+# SSH 키 권한 검사
+python scripts/security/permission_checker.py --mode ssh
+
+# 모든 검사
+sudo python scripts/security/permission_checker.py --mode all
+```
+
+---
+
+## 📊 **데이터베이스 조회**
+
+### **작업 목록 조회**
+```bash
+sqlite3 data/automation.db "SELECT id, name, enabled, cron_expression FROM jobs;"
+```
+
+### **실행 이력 조회**
+```bash
+sqlite3 data/automation.db "SELECT * FROM job_executions ORDER BY started_at DESC LIMIT 10;"
+```
+
+### **보안 점검 결과 조회**
+```bash
+sqlite3 data/automation.db "
+SELECT title, level, sent_at 
+FROM notifications 
+WHERE channel = 'security_check' 
+ORDER BY sent_at DESC 
+LIMIT 5;
+"
+```
+
+### **시스템 메트릭 조회**
+```bash
+sqlite3 data/automation.db "
+SELECT timestamp, cpu_percent, memory_percent, disk_percent 
+FROM system_metrics 
+ORDER BY timestamp DESC 
+LIMIT 10;
+"
+```
+
+---
+
+## 🧪 **테스트**
+
+### **단위 테스트**
 ```bash
 # 설정 테스트
-pipenv run python config/settings.py
+python config/settings.py
 
 # 로거 테스트
-pipenv run python core/logger.py
+python core/logger.py
 
 # 데이터베이스 테스트
-pipenv run python storage/database.py
+python storage/database.py
 
 # 스케줄러 테스트
-pipenv run python core/scheduler.py
+python core/scheduler.py
 
 # 실행기 테스트
-pipenv run python core/executor.py
-
-# 시스템 모니터 테스트
-pipenv run python scripts/monitoring/system_monitor.py
+python core/executor.py
 ```
 
-### 코드 품질
-
+### **통합 테스트**
 ```bash
-# 코드 포맷팅
-pipenv run black .
+# 시스템 모니터링 테스트
+python scripts/monitoring/system_monitor.py
 
-# 린팅
-pipenv run flake8 .
+# 보안 스크립트 통합 테스트
+./scripts/security/test_security.sh
 
-# 타입 체크
-pipenv run mypy .
+# 전체 테스트 (sudo 권장)
+sudo ./scripts/security/test_security.sh
 ```
 
-## 📊 모니터링
+---
 
-### 로그 확인
+## 🗺️ **로드맵**
 
-```bash
-# 실시간 로그 보기
-tail -f logs/automation.log
+### **Phase 2: 자동화 스크립트 (진행 중 - 50%)**
+- [x] 시스템 모니터링
+- [x] 보안 점검
+- [ ] 로그 분석
+- [ ] 계정 관리
+- [ ] 백업 자동화
 
-# 에러 로그만 보기
-grep "ERROR" logs/automation.log
+### **Phase 3: 알림 시스템 (예정)**
+- [ ] 이메일 알림 (SMTP)
+- [ ] Slack 웹훅
+- [ ] Discord 웹훅
+- [ ] 알림 템플릿
+- [ ] 중복 알림 방지
 
-# 특정 작업 로그 검색
-grep "job_id=123" logs/automation.log
-```
+### **Phase 4: 웹 대시보드 (예정)**
+- [ ] FastAPI REST API
+- [ ] 작업 관리 API (CRUD)
+- [ ] 실행 이력 조회 API
+- [ ] 실시간 로그 스트리밍 (WebSocket)
+- [ ] 프론트엔드 UI (React/Vue)
+- [ ] 대시보드 차트 (Chart.js)
 
-### 데이터베이스 조회
+---
 
-```bash
-# SQLite 데이터베이스 열기
-sqlite3 data/automation.db
+## 📝 **변경 이력**
 
-# 작업 목록 조회
-SELECT * FROM jobs;
+### **v0.4.0 (2025-10-26)** - 현재
+- ✅ 보안 점검 스크립트 추가
+  - 종합 보안 점검 (파일 권한, SSH, 포트, 방화벽)
+  - 포트 스캔 (멀티스레드, 위험 포트 탐지)
+  - 파일 권한 검사 (world-writable, SUID/SGID, SSH 키)
+  - 보안 점수 산출 시스템
+- ✅ 테스트 스크립트 추가
 
-# 실행 이력 조회
-SELECT * FROM job_executions ORDER BY started_at DESC LIMIT 10;
+### **v0.3.0 (2025-10-25)**
+- ✅ 시스템 모니터링 스크립트 추가
 
-# 시스템 메트릭 조회
-SELECT * FROM system_metrics ORDER BY timestamp DESC LIMIT 10;
-```
+### **v0.2.0 (2025-10-24)**
+- ✅ 작업 스케줄러 구현
+- ✅ 작업 실행기 구현
 
-## 🎯 로드맵
+### **v0.1.0 (2025-10-23)**
+- ✅ 프로젝트 초기 구조 설정
 
-### Phase 1: 핵심 기능 (완료) ✅
-- [x] 크로스 플랫폼 지원
-- [x] 작업 스케줄러
-- [x] 작업 실행기
-- [x] 로깅 시스템
-- [x] 데이터베이스 관리
-- [x] 시스템 모니터링 스크립트
+---
 
-### Phase 2: 자동화 스크립트 (진행 중)
-- [ ] 로그 분석 스크립트
-- [ ] 보안 점검 스크립트
-- [ ] 계정 관리 스크립트
-- [ ] CVE 스캔 스크립트
+## 👥 **팀원**
 
-### Phase 3: 알림 및 대시보드
-- [ ] 이메일 알림
-- [ ] Slack 알림
-- [ ] 웹 대시보드
-- [ ] REST API
+- **남수민** (2184039) - 팀장
+- **김규민** (2084002)
+- **임준호** (2184XXX)
 
-### Phase 4: 고도화
-- [ ] 분산 실행 지원
-- [ ] 플러그인 시스템
-- [ ] AI 기반 이상 탐지
+---
 
-## 🐛 트러블슈팅
-
-### Windows에서 실행 시 주의사항
-
-1. PowerShell 실행 정책 설정:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-2. 긴 경로 지원 활성화:
-```
-레지스트리 편집기 > HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem
-LongPathsEnabled = 1
-```
-
-### Linux에서 실행 시 주의사항
-
-1. 스크립트 실행 권한:
-```bash
-chmod +x scripts/**/*.py
-```
-
-2. Python 경로 확인:
-```bash
-which python3
-```
-
-## 📝 라이선스
-
-이 프로젝트는 교육 목적의 캡스톤 디자인 프로젝트입니다.
-
-## 👥 팀원
-
-- 남수민 (2184039) - 팀장
-- 김규민 (2084002)
-- 임준호 (2184XXX)
-
-## 📧 문의
-
-프로젝트 관련 문의사항은 이슈로 등록해주세요.
+**⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요!**
