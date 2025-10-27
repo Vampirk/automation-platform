@@ -4,7 +4,7 @@
 Job CRUD 및 실행 관리
 
 수정 사항:
-  - 2025-10-27: /jobs/executions 엔드포인트 추가 (전체 실행 이력)
+  - 2025-10-27: 라우팅 순서 수정 - /jobs/executions를 /{job_id} 앞으로 이동
 """
 import sys
 from pathlib import Path
@@ -79,6 +79,80 @@ def list_jobs(
             detail=f"Failed to list jobs: {str(e)}"
         )
 
+
+# ========== 작업 실행 이력(JobExecution) - 구체적 경로를 먼저! ==========
+
+@router.get("/executions", response_model=schemas.JobExecutionListResponse)
+def list_all_executions(
+    db: Session = Depends(get_database),
+    params: CommonQueryParams = Depends(),
+    status_filter: Optional[str] = Query(None, description="상태 필터")
+):
+    """
+    ⭐ 전체 작업 실행 이력 조회 (프론트엔드용)
+    
+    모든 작업의 실행 이력을 조회합니다.
+    """
+    try:
+        query = db.query(JobExecution)
+        
+        # 상태 필터
+        if status_filter:
+            try:
+                status_enum = JobStatus(status_filter)
+                query = query.filter(JobExecution.status == status_enum)
+            except ValueError:
+                valid_statuses = [s.value for s in JobStatus]
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid status. Must be one of: {valid_statuses}"
+                )
+        
+        # 전체 개수
+        total = query.count()
+        
+        # 정렬 (기본: 최신순)
+        order_column = getattr(JobExecution, params.sort_by, JobExecution.started_at)
+        if params.order == "desc":
+            query = query.order_by(desc(order_column))
+        else:
+            query = query.order_by(asc(order_column))
+        
+        # 페이지네이션
+        executions = query.offset(params.skip).limit(params.limit).all()
+        
+        # Job 이름 추가
+        for execution in executions:
+            if execution.job:
+                execution.job_name = execution.job.name
+        
+        return schemas.JobExecutionListResponse(total=total, items=executions)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing executions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list executions: {str(e)}"
+        )
+
+
+@router.get("/executions/{execution_id}", response_model=schemas.JobExecutionResponse)
+def get_execution(execution_id: int, db: Session = Depends(get_database)):
+    """실행 이력 상세 조회"""
+    execution = db.query(JobExecution).filter(JobExecution.id == execution_id).first()
+    
+    if not execution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Execution {execution_id} not found"
+        )
+    
+    return execution
+
+
+# ========== 작업(Job) 상세 조회 - path parameter는 나중에! ==========
 
 @router.get("/{job_id}", response_model=schemas.JobResponse)
 def get_job(job_id: int, db: Session = Depends(get_database)):
@@ -287,64 +361,6 @@ def execute_job(job_id: int, db: Session = Depends(get_database)):
         )
 
 
-# ========== 작업 실행 이력(JobExecution) ==========
-
-@router.get("/executions", response_model=schemas.JobExecutionListResponse)
-def list_all_executions(
-    db: Session = Depends(get_database),
-    params: CommonQueryParams = Depends(),
-    status_filter: Optional[str] = Query(None, description="상태 필터")
-):
-    """
-    ⭐ 전체 작업 실행 이력 조회 (프론트엔드용)
-    
-    모든 작업의 실행 이력을 조회합니다.
-    """
-    try:
-        query = db.query(JobExecution)
-        
-        # 상태 필터
-        if status_filter:
-            try:
-                status_enum = JobStatus(status_filter)
-                query = query.filter(JobExecution.status == status_enum)
-            except ValueError:
-                valid_statuses = [s.value for s in JobStatus]
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status. Must be one of: {valid_statuses}"
-                )
-        
-        # 전체 개수
-        total = query.count()
-        
-        # 정렬 (기본: 최신순)
-        order_column = getattr(JobExecution, params.sort_by, JobExecution.started_at)
-        if params.order == "desc":
-            query = query.order_by(desc(order_column))
-        else:
-            query = query.order_by(asc(order_column))
-        
-        # 페이지네이션
-        executions = query.offset(params.skip).limit(params.limit).all()
-        
-        # Job 이름 추가
-        for execution in executions:
-            if execution.job:
-                execution.job_name = execution.job.name
-        
-        return schemas.JobExecutionListResponse(total=total, items=executions)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error listing executions: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list executions: {str(e)}"
-        )
-
-
 @router.get("/{job_id}/executions", response_model=schemas.JobExecutionListResponse)
 def list_job_executions(
     job_id: int,
@@ -399,17 +415,3 @@ def list_job_executions(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list job executions: {str(e)}"
         )
-
-
-@router.get("/executions/{execution_id}", response_model=schemas.JobExecutionResponse)
-def get_execution(execution_id: int, db: Session = Depends(get_database)):
-    """실행 이력 상세 조회"""
-    execution = db.query(JobExecution).filter(JobExecution.id == execution_id).first()
-    
-    if not execution:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Execution {execution_id} not found"
-        )
-    
-    return execution

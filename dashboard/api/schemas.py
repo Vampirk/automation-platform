@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 API 요청/응답 스키마
 Pydantic 모델 정의
@@ -69,6 +70,7 @@ class JobExecutionBase(BaseModel):
 class JobExecutionResponse(JobExecutionBase):
     """작업 실행 응답"""
     id: int
+    job_name: Optional[str] = Field(None, description="작업 이름")  # ⭐ 추가!
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     duration_seconds: Optional[float] = None
@@ -139,6 +141,11 @@ class SystemMetricBase(BaseModel):
     network_recv_mb: Optional[float] = None
 
 
+class SystemMetricCreate(SystemMetricBase):
+    """시스템 메트릭 생성 요청"""
+    pass
+
+
 class SystemMetricResponse(SystemMetricBase):
     """시스템 메트릭 응답"""
     id: int
@@ -151,44 +158,3 @@ class SystemMetricListResponse(BaseModel):
     """시스템 메트릭 목록 응답"""
     total: int
     items: List[SystemMetricResponse]
-
-
-# ========== 통계 스키마 ==========
-
-class DashboardStats(BaseModel):
-    """대시보드 통계"""
-    total_jobs: int = Field(..., description="전체 작업 수")
-    enabled_jobs: int = Field(..., description="활성화된 작업 수")
-    total_executions: int = Field(..., description="전체 실행 횟수")
-    success_executions: int = Field(..., description="성공한 실행 횟수")
-    failed_executions: int = Field(..., description="실패한 실행 횟수")
-    success_rate: float = Field(..., description="성공률 (%)")
-    total_notifications: int = Field(..., description="전체 알림 수")
-    critical_notifications: int = Field(..., description="긴급 알림 수")
-
-
-class SystemHealthStatus(BaseModel):
-    """시스템 건강 상태"""
-    status: str = Field(..., description="상태 (healthy/warning/critical)")
-    cpu_status: str = Field(..., description="CPU 상태")
-    memory_status: str = Field(..., description="메모리 상태")
-    disk_status: str = Field(..., description="디스크 상태")
-    last_check: datetime = Field(..., description="마지막 확인 시간")
-    current_cpu: Optional[float] = Field(None, description="현재 CPU 사용률 (%)")
-    current_memory: Optional[float] = Field(None, description="현재 메모리 사용률 (%)")
-    current_disk: Optional[float] = Field(None, description="현재 디스크 사용률 (%)")
-
-
-# ========== 일반 응답 스키마 ==========
-
-class MessageResponse(BaseModel):
-    """일반 메시지 응답"""
-    message: str
-    detail: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """에러 응답"""
-    error: str
-    detail: Optional[str] = None
-    status_code: int
