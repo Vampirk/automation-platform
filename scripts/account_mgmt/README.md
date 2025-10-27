@@ -1,10 +1,10 @@
-# 👤 계정 관리 스크립트 (Account Management Scripts)
+# 👥 계정 관리 스크립트 (Account Management Scripts)
 
-사용자 계정 정책 검증, 장기 미사용 계정 탐지, 비밀번호 정책 검증을 자동화하는 스크립트 모음입니다.
+사용자 계정 정책 검증, 장기 미사용 계정 탐지, 비밀번호 정책 검사를 자동화하는 스크립트 모음입니다.
 
 **작성자:** 1조 (남수민 2184039, 김규민 2084002, 임준호 2184XXX)  
 **작성일:** 2025-10-26  
-**상태:** ✅ 정상 작동 확인 완료
+**상태:** ✅ 완료
 
 ---
 
@@ -13,107 +13,159 @@
 ```
 scripts/account_mgmt/
 ├── __init__.py              # 패키지 초기화
-├── account_checker.py       # 계정 정책 검사 ✅
-├── inactive_finder.py       # 장기 미사용 계정 탐지 ✅
-├── password_policy.py       # 비밀번호 정책 검증 📋
+├── account_checker.py       # 계정 정책 검사
+├── inactive_finder.py       # 장기 미사용 계정 탐지
+├── password_policy.py       # 비밀번호 정책 검사
 └── README.md               # 이 파일
 ```
-
-**범례:**
-- ✅ 구현 완료 및 테스트 완료
-- 📋 예정
 
 ---
 
 ## 🎯 주요 기능
 
 ### 1. account_checker.py ✅
-**계정 정책 검사기 (Account Checker)**
+**계정 정책 검사 및 의심스러운 계정 탐지**
 
-시스템의 모든 사용자 계정을 조회하고 정책 위반 계정을 자동으로 탐지합니다.
+**기능:**
+- 모든 사용자 계정 조회 (시스템/사용자 계정 구분)
+- UID 0 계정 탐지 (root 제외)
+- sudo/admin 그룹 멤버 확인
+- 쉘 접근 가능 계정 확인
+- 의심스러운 계정 자동 탐지
+- 통계 및 리포트 생성
+- 데이터베이스에 알림 저장
 
-#### 기능
-- **전체 계정 조회**: Linux(/etc/passwd) 또는 Windows(NetUserEnum) 기반
-- **계정 분류**: 시스템 계정 vs 사용자 계정
-- **관리자 권한 확인**: sudo/Administrator 그룹 멤버십 검증
-- **의심스러운 계정 탐지**:
-  - UID 0인 비root 계정
-  - sudo 권한이 있는 시스템 계정
-  - 이상한 쉘을 가진 사용자 계정
-  - 시스템 UID인데 사용자 홈 디렉토리를 가진 계정
-  - 관리자 권한이 있는 일반 사용자 (Windows)
-- **자동 알림**: 의심스러운 계정 발견 시 데이터베이스에 알림 저장
-- **통계 생성**: 전체/사용자/시스템/관리자 계정 수 집계
+**탐지 항목 (Linux):**
+- UID 0인 비root 계정
+- 이상한 쉘을 가진 사용자 계정
+- 시스템 UID(< 1000)인데 /home/ 디렉토리를 가진 계정
+- sudo 권한을 가진 시스템 계정
 
-#### Linux 탐지 패턴
-1. **UID 0인 비root 계정**
-   ```
-   이슈: UID 0 (root privileges)
-   위험도: CRITICAL
-   설명: root가 아닌 계정이 UID 0을 가지고 있어 root 권한 획득
-   ```
+**탐지 항목 (Windows):**
+- Administrators 그룹에 속한 일반 사용자 계정
+- 비활성화되지 않은 오래된 계정
 
-2. **이상한 쉘**
-   ```
-   이슈: Unusual shell
-   위험도: MEDIUM
-   설명: 사용자 계정인데 /bin/bash, /bin/zsh, /bin/sh가 아닌 쉘 사용
-   ```
+**출력 예시:**
+```
+============================================================
+👥 Account Policy Check Report
+============================================================
+Platform: LINUX
+Total Accounts: 45
+  User Accounts: 5
+  System Accounts: 38
+  Admin/Sudo Accounts: 3
 
-3. **시스템 UID + 사용자 홈**
-   ```
-   이슈: System UID with user home directory
-   위험도: MEDIUM
-   설명: UID < 1000인 시스템 계정이 /home/ 디렉토리 사용
-   ```
+🚨 Suspicious Accounts: 1
 
-4. **sudo 권한 시스템 계정**
-   ```
-   이슈: System account with sudo privileges
-   위험도: HIGH
-   설명: 시스템 계정이 sudo 권한 보유
-   ```
-
-#### Windows 탐지 패턴
-1. **관리자 권한 일반 계정**
-   ```
-   이슈: User account with admin privileges
-   위험도: HIGH
-   설명: 일반 사용자 계정이 관리자 권한 보유
-   ```
+  ⚠️  testuser
+      - System UID with user home directory
+      UID: 999, Shell: /bin/bash
+============================================================
+```
 
 ### 2. inactive_finder.py ✅
-**장기 미사용 계정 탐지기 (Inactive Account Finder)**
+**장기 미사용 계정 탐지**
 
-일정 기간 동안 로그인하지 않은 계정을 자동으로 탐지합니다.
+**기능:**
+- 최근 로그인 시간 조회 (lastlog)
+- 90일 이상 미로그인 계정 탐지
+- 한 번도 로그인하지 않은 계정 탐지
+- 로그인 이력 분석
+- 자동 비활성화 추천
+- 통계 및 리포트 생성
+- 데이터베이스에 알림 저장
 
-#### 기능
-- **로그인 기록 추적**: 
-  - Linux: `/var/log/wtmp`, `lastlog` 기반
-  - Windows: `NetUserGetInfo` API 사용
-- **장기 미사용 탐지**: 기본 90일 이상 미로그인 계정
-- **한 번도 로그인 안 한 계정**: 생성 후 단 한 번도 사용되지 않은 계정
-- **자동 알림**: 
-  - 장기 미사용: MEDIUM 레벨
-  - 한 번도 미로그인: LOW 레벨
-- **상세 정보**: 계정명, 마지막 로그인 시각, 미사용 일수
+**탐지 기준:**
+- 미사용 기준: 90일 이상 로그인 없음
+- 시스템 계정 제외 (UID < 1000)
+- 로그인 불가 계정 제외 (nologin, false 쉘)
 
-#### 탐지 기준
-- **장기 미사용**: 90일 (설정 가능)
-- **심각도**: 
-  - 180일+: CRITICAL
-  - 90-180일: MEDIUM
-  - 한 번도 미로그인: LOW
+**출력 예시:**
+```
+============================================================
+🔍 Inactive Account Report
+============================================================
+Platform: LINUX
+Inactive Threshold: 90 days
 
-### 3. password_policy.py 📋
-**비밀번호 정책 검증기 (Password Policy Checker)** *(개발 예정)*
+Inactive Accounts: 2
+Never Logged In: 3
 
-#### 예정 기능
+⚠️  Long-term Inactive Accounts (90+ days):
+
+  👤 olduser
+     Days Inactive: 145
+     Last Login: 2025-06-03 14:23:45
+     Home: /home/olduser
+
+💤 Never Logged In Accounts:
+  - testuser1
+  - testuser2
+  - demo
+
+💡 Recommendation:
+   Consider disabling or removing long-term inactive accounts
+   Review and remove unused accounts created but never used
+============================================================
+```
+
+### 3. password_policy.py ✅
+**비밀번호 정책 검사**
+
+**기능:**
 - 비밀번호 만료 임박 계정 탐지 (7일 이내)
-- 비밀번호 복잡도 정책 검증
-- 비밀번호 최근 변경 이력 추적
-- 기본 비밀번호 사용 계정 탐지
-- 비밀번호 정책 위반 통계
+- 만료된 비밀번호 계정 확인
+- 비밀번호 정책 검증 (/etc/login.defs)
+- shadow 파일 분석
+- 비밀번호 변경 알림
+- 통계 및 리포트 생성
+- 데이터베이스에 알림 저장
+
+**검사 항목:**
+- PASS_MAX_DAYS: 비밀번호 최대 사용 일수
+- PASS_MIN_DAYS: 비밀번호 최소 사용 일수
+- PASS_MIN_LEN: 비밀번호 최소 길이
+- PASS_WARN_AGE: 만료 경고 일수
+
+**출력 예시:**
+```
+============================================================
+🔐 Password Policy Report
+============================================================
+Platform: LINUX
+
+📋 Current Policy:
+   Max Days: 90
+   Min Days: 1
+   Min Length: 8
+   Warning Days: 7
+
+Expiry Warning Threshold: 7 days
+Expiring Soon: 2
+Already Expired: 1
+
+🚨 CRITICAL - Expired Passwords:
+
+  ⛔ expireduser
+     Expired: 15 days ago
+     Expiry Date: 2025-10-11
+
+⚠️  Passwords Expiring Soon:
+
+  👤 user1
+     Days Until Expiry: 3
+     Expiry Date: 2025-10-29
+
+  👤 user2
+     Days Until Expiry: 5
+     Expiry Date: 2025-10-31
+
+💡 Recommendation:
+   Force password change for expired accounts immediately
+   Notify users to change passwords before expiry
+============================================================
+```
 
 ---
 
@@ -121,173 +173,182 @@ scripts/account_mgmt/
 
 ### 사전 준비
 
-#### 의존성 설치
+#### 1. 권한 설정
 ```bash
-# Linux 전용
-pip install python-pam  # 선택 사항
+# Linux: root 권한 필요 (shadow 파일 접근)
+sudo chmod +r /etc/shadow
 
-# Windows 전용
+# Windows: 관리자 권한 PowerShell 필요
+```
+
+#### 2. 의존성 확인
+```bash
+# Linux 전용 명령어
+which lastlog
+which passwd
+
+# Windows의 경우 pywin32 필요
 pip install pywin32
 ```
-
-#### 권한 설정
-```bash
-# Linux에서 lastlog, wtmp 읽기 위해 sudo 권한 필요
-sudo chmod +r /var/log/wtmp
-sudo chmod +r /var/log/lastlog
-```
-
----
 
 ### 실행 방법
 
 #### 1. 계정 정책 검사
-
-**Linux:**
 ```bash
-# 프로젝트 루트에서 실행
-python scripts/account_mgmt/account_checker.py
+# Linux
+sudo python scripts/account_mgmt/account_checker.py
 
 # 또는 PYTHONPATH 설정
-PYTHONPATH=/path/to/automation-platform python scripts/account_mgmt/account_checker.py
-```
+sudo PYTHONPATH=/path/to/automation-platform python scripts/account_mgmt/account_checker.py
 
-**Windows:**
-```powershell
-# PowerShell에서
+# Windows (관리자 권한 PowerShell)
 python scripts\account_mgmt\account_checker.py
-
-# 또는 관리자 권한으로
-# (관리자 계정 정보 접근 시 권장)
 ```
 
-**출력 예시:**
-```
-============================================================
-👥 Account Policy Checker Started
-============================================================
-
-============================================================
-📊 ACCOUNT CHECK REPORT
-============================================================
-Total Accounts: 45
-User Accounts: 12
-System Accounts: 33
-Admin Accounts: 3
-Suspicious Accounts: 2
-
-Platform: linux
-
-🚨 Suspicious Accounts:
-------------------------------------------------------------
-Account: backup_admin
-  Username: backup_admin
-  UID: 1001
-  Group: adm
-  Shell: /bin/bash
-  Can Login: True
-  Is Sudoer: True
-  Type: user
-  Issues:
-    - User account with unusual admin privileges
-
-Account: service_account
-  Username: service_account
-  UID: 999
-  Group: sudo
-  Shell: /bin/bash
-  Can Login: False
-  Is Sudoer: True
-  Type: system
-  Issues:
-    - System account with sudo privileges
-
-============================================================
-✅ Account Check Completed
-============================================================
-```
+**출력 정보:**
+- 전체 계정 수 (사용자/시스템/관리자 계정)
+- 의심스러운 계정 목록 및 이슈
+- 플랫폼별 세부 정보
 
 #### 2. 장기 미사용 계정 탐지
-
-**Linux:**
 ```bash
-# sudo 권한으로 실행 (wtmp, lastlog 읽기 위해)
+# Linux
 sudo python scripts/account_mgmt/inactive_finder.py
 
-# 또는 PYTHONPATH 설정
-sudo PYTHONPATH=/path/to/automation-platform python scripts/account_mgmt/inactive_finder.py
-```
-
-**Windows:**
-```powershell
+# Windows
 python scripts\account_mgmt\inactive_finder.py
 ```
 
-**출력 예시:**
+**출력 정보:**
+- 90일 이상 미사용 계정
+- 한 번도 로그인하지 않은 계정
+- 각 계정의 마지막 로그인 시간
+- 미사용 일수
+
+#### 3. 비밀번호 정책 검사
+```bash
+# Linux
+sudo python scripts/account_mgmt/password_policy.py
+
+# Windows
+python scripts\account_mgmt\password_policy.py
 ```
-============================================================
-🔍 Inactive Account Finder Started
-============================================================
-Threshold: 90 days
 
-============================================================
-📊 INACTIVE ACCOUNT REPORT
-============================================================
-Inactive Threshold: 90 days
-Inactive Accounts: 3
-Never Logged In: 2
+**출력 정보:**
+- 현재 비밀번호 정책
+- 7일 이내 만료 예정 계정
+- 이미 만료된 계정
+- 각 계정의 만료일 및 남은 일수
 
-Platform: linux
+---
 
-🚨 Inactive Accounts (90+ days):
-------------------------------------------------------------
-1. testuser01
-   Last Login: 2024-05-15 14:30:00
-   Days Inactive: 165
-   Type: user
-   Home: /home/testuser01
-   Shell: /bin/bash
+## 🔧 설정 및 커스터마이징
 
-2. oldadmin
-   Last Login: 2024-06-20 09:15:00
-   Days Inactive: 129
-   Type: user
-   Home: /home/oldadmin
-   Shell: /bin/bash
+### 미사용 계정 기준 변경
 
-3. contractor
-   Last Login: 2024-07-01 16:45:00
-   Days Inactive: 118
-   Type: user
-   Home: /home/contractor
-   Shell: /bin/bash
+`inactive_finder.py` 파일에서 기준 일수 수정:
 
-⚠️  Never Logged In:
-------------------------------------------------------------
-1. tempuser
-   Created: 2024-08-10
-   Type: user
-   Home: /home/tempuser
-   Shell: /bin/bash
+```python
+class InactiveAccountFinder:
+    INACTIVE_DAYS = 90  # 기본값: 90일
+    # 예: 180일로 변경 → INACTIVE_DAYS = 180
+```
 
-2. testaccount
-   Created: 2024-09-01
-   Type: user
-   Home: /home/testaccount
-   Shell: /bin/bash
+### 비밀번호 만료 경고 기준 변경
 
-============================================================
-✅ Inactive Account Check Completed
-============================================================
+`password_policy.py` 파일에서 경고 일수 수정:
+
+```python
+class PasswordPolicyChecker:
+    EXPIRY_WARNING_DAYS = 7  # 기본값: 7일
+    # 예: 14일로 변경 → EXPIRY_WARNING_DAYS = 14
+```
+
+### 시스템 계정 제외 UID 변경
+
+`account_checker.py` 및 `inactive_finder.py`에서:
+
+```python
+# 시스템 계정 제외 (UID < 1000)
+if uid < 1000:  # Linux 기본값
+    continue
+
+# 예: UID < 500으로 변경 (일부 시스템)
+if uid < 500:
+    continue
 ```
 
 ---
 
-## 📊 데이터베이스 알림
+## 📅 스케줄러 등록
 
-계정 관리 스크립트는 발견된 이슈를 자동으로 데이터베이스에 저장합니다.
+### 데이터베이스에 작업 등록
 
-### 알림 조회
+```python
+from storage import db, Job, JobType
+
+with db.session_scope() as session:
+    # 매일 자정 계정 검사
+    account_job = Job(
+        name="daily_account_check",
+        description="일일 계정 정책 검사",
+        job_type=JobType.ACCOUNT,
+        script_path="scripts/account_mgmt/account_checker.py",
+        cron_expression="0 0 * * *",  # 매일 자정
+        enabled=True,
+        timeout_seconds=300
+    )
+    session.add(account_job)
+    
+    # 매주 월요일 장기 미사용 계정 검사
+    inactive_job = Job(
+        name="weekly_inactive_check",
+        description="주간 미사용 계정 검사",
+        job_type=JobType.ACCOUNT,
+        script_path="scripts/account_mgmt/inactive_finder.py",
+        cron_expression="0 1 * * 1",  # 매주 월요일 1시
+        enabled=True,
+        timeout_seconds=300
+    )
+    session.add(inactive_job)
+    
+    # 매주 비밀번호 정책 검사
+    password_job = Job(
+        name="weekly_password_check",
+        description="주간 비밀번호 정책 검사",
+        job_type=JobType.ACCOUNT,
+        script_path="scripts/account_mgmt/password_policy.py",
+        cron_expression="0 2 * * 1",  # 매주 월요일 2시
+        enabled=True,
+        timeout_seconds=300
+    )
+    session.add(password_job)
+```
+
+### Cron 표현식 예시
+
+```bash
+# 매일 자정
+0 0 * * *
+
+# 매주 월요일 오전 2시
+0 2 * * 1
+
+# 매월 1일 오전 3시
+0 3 1 * *
+
+# 매일 오전 9시, 오후 6시
+0 9,18 * * *
+
+# 평일 오전 10시
+0 10 * * 1-5
+```
+
+---
+
+## 📊 데이터베이스 조회
+
+### 계정 관리 알림 조회
 
 ```bash
 # 의심스러운 계정 알림
@@ -295,7 +356,8 @@ sqlite3 data/automation.db "
 SELECT title, message, level, sent_at 
 FROM notifications 
 WHERE channel = 'account_check' 
-ORDER BY sent_at DESC;
+ORDER BY sent_at DESC 
+LIMIT 10;
 "
 
 # 장기 미사용 계정 알림
@@ -303,351 +365,198 @@ sqlite3 data/automation.db "
 SELECT title, message, level, sent_at 
 FROM notifications 
 WHERE channel = 'account_inactive' 
+ORDER BY sent_at DESC 
+LIMIT 10;
+"
+
+# 비밀번호 만료 알림
+sqlite3 data/automation.db "
+SELECT title, message, level, sent_at 
+FROM notifications 
+WHERE channel = 'password_policy' 
+ORDER BY sent_at DESC 
+LIMIT 10;
+"
+
+# 최근 7일 간 모든 계정 관련 알림
+sqlite3 data/automation.db "
+SELECT title, message, level, channel, sent_at 
+FROM notifications 
+WHERE channel IN ('account_check', 'account_inactive', 'password_policy')
+  AND sent_at >= datetime('now', '-7 days')
 ORDER BY sent_at DESC;
 "
-```
-
-### 알림 레벨
-
-| 레벨 | 설명 | 예시 |
-|------|------|------|
-| CRITICAL | 즉각 대응 필요 | UID 0 비root 계정 |
-| HIGH | 빠른 대응 필요 | sudo 권한 시스템 계정 |
-| MEDIUM | 주의 필요 | 장기 미사용 계정, 이상한 쉘 |
-| LOW | 정보성 | 한 번도 미로그인 계정 |
-
----
-
-## 🔄 스케줄링
-
-### Cron 설정 (Linux)
-
-```bash
-# crontab 편집
-crontab -e
-
-# 매일 자정에 계정 정책 검사
-0 0 * * * /usr/bin/python3 /path/to/automation-platform/scripts/account_mgmt/account_checker.py
-
-# 매주 월요일 오전 9시에 장기 미사용 계정 검사
-0 9 * * 1 sudo /usr/bin/python3 /path/to/automation-platform/scripts/account_mgmt/inactive_finder.py
-```
-
-### Task Scheduler (Windows)
-
-```powershell
-# 매일 자정 실행
-schtasks /create /tn "Account Policy Check" /tr "python C:\path\to\automation-platform\scripts\account_mgmt\account_checker.py" /sc daily /st 00:00
-
-# 매주 월요일 오전 9시 실행
-schtasks /create /tn "Inactive Account Check" /tr "python C:\path\to\automation-platform\scripts\account_mgmt\inactive_finder.py" /sc weekly /d MON /st 09:00
-```
-
-### 데이터베이스 기반 스케줄링
-
-```python
-from storage import db, Job, JobType
-
-# 계정 정책 검사 작업 등록
-with db.session_scope() as session:
-    job = Job(
-        name="account_policy_check",
-        description="계정 정책 검사",
-        job_type=JobType.ACCOUNT,
-        script_path="scripts/account_mgmt/account_checker.py",
-        cron_expression="0 0 * * *",  # 매일 자정
-        enabled=True,
-        timeout_seconds=600
-    )
-    session.add(job)
-
-# 장기 미사용 계정 검사 작업 등록
-with db.session_scope() as session:
-    job = Job(
-        name="inactive_account_check",
-        description="장기 미사용 계정 검사",
-        job_type=JobType.ACCOUNT,
-        script_path="scripts/account_mgmt/inactive_finder.py",
-        cron_expression="0 9 * * 1",  # 매주 월요일 오전 9시
-        enabled=True,
-        timeout_seconds=600
-    )
-    session.add(job)
-```
-
----
-
-## 🔧 설정 커스터마이징
-
-### inactive_finder.py - 임계치 변경
-
-```python
-# scripts/account_mgmt/inactive_finder.py 파일 수정
-class InactiveFinder:
-    INACTIVE_DAYS = 90  # 기본값: 90일
-    # 다른 값으로 변경 가능 (예: 60일, 120일)
-```
-
-### account_checker.py - 중요 파일 추가
-
-Linux에서 추가 검사 파일 설정:
-```python
-# account_checker.py에서 CRITICAL_FILES 딕셔너리 확장
-CRITICAL_FILES = {
-    '/etc/passwd': {'mode': '0644', 'owner': 'root', 'group': 'root'},
-    '/etc/shadow': {'mode': '0640', 'owner': 'root', 'group': 'shadow'},
-    # 추가 파일...
-}
-```
-
----
-
-## 🧪 테스트
-
-### 수동 테스트
-
-```bash
-# account_checker 테스트
-python scripts/account_mgmt/account_checker.py
-
-# inactive_finder 테스트 (sudo 필요)
-sudo python scripts/account_mgmt/inactive_finder.py
-
-# Windows에서
-python scripts\account_mgmt\account_checker.py
-python scripts\account_mgmt\inactive_finder.py
-```
-
-### 통합 테스트 스크립트
-
-```bash
-#!/bin/bash
-# test_account_mgmt.sh
-
-echo "🔍 Testing Account Management Scripts..."
-echo ""
-
-echo "1️⃣  Testing account_checker.py..."
-python scripts/account_mgmt/account_checker.py
-if [ $? -eq 0 ]; then
-    echo "✅ account_checker.py: PASS"
-else
-    echo "❌ account_checker.py: FAIL"
-fi
-echo ""
-
-echo "2️⃣  Testing inactive_finder.py..."
-sudo python scripts/account_mgmt/inactive_finder.py
-if [ $? -eq 0 ]; then
-    echo "✅ inactive_finder.py: PASS"
-else
-    echo "❌ inactive_finder.py: FAIL"
-fi
-echo ""
-
-echo "✅ All tests completed!"
-```
-
----
-
-## 📋 보안 권장사항
-
-### 발견된 이슈 대응 가이드
-
-#### 1. UID 0 비root 계정
-```bash
-# 계정 삭제
-sudo userdel -r [username]
-
-# 또는 UID 변경
-sudo usermod -u [new_uid] [username]
-```
-
-#### 2. sudo 권한 시스템 계정
-```bash
-# sudo 그룹에서 제거
-sudo deluser [username] sudo
-
-# sudoers 파일 확인
-sudo visudo
-```
-
-#### 3. 장기 미사용 계정
-```bash
-# 계정 잠금
-sudo usermod -L [username]
-
-# 계정 삭제
-sudo userdel -r [username]
-
-# 계정 만료일 설정
-sudo usermod -e YYYY-MM-DD [username]
-```
-
-#### 4. 한 번도 미로그인 계정
-```bash
-# 계정이 불필요하면 삭제
-sudo userdel -r [username]
-
-# 또는 일정 기간 후 재검토
 ```
 
 ---
 
 ## 🐛 문제 해결
 
-### ❌ Permission denied: /var/log/wtmp
+### 1. Permission denied 에러
 
-**원인:** wtmp 파일 읽기 권한 없음
+**문제:**
+```
+PermissionError: [Errno 13] Permission denied: '/etc/shadow'
+```
 
 **해결:**
 ```bash
-# sudo로 실행
+# Linux: sudo로 실행
+sudo python scripts/account_mgmt/account_checker.py
+
+# Windows: 관리자 권한 PowerShell에서 실행
+```
+
+### 2. spwd 모듈을 찾을 수 없음 (Windows)
+
+**문제:**
+```
+ModuleNotFoundError: No module named 'spwd'
+```
+
+**해결:**
+- spwd는 Linux 전용 모듈입니다
+- Windows에서는 자동으로 win32 모듈을 사용합니다
+- pywin32 설치: `pip install pywin32`
+
+### 3. lastlog 명령을 찾을 수 없음
+
+**문제:**
+```
+FileNotFoundError: [Errno 2] No such file or directory: 'lastlog'
+```
+
+**해결:**
+```bash
+# lastlog 설치
+sudo apt-get install login  # Debian/Ubuntu
+sudo yum install util-linux  # CentOS/RHEL
+
+# 경로 확인
+which lastlog
+```
+
+### 4. 데이터베이스 연결 오류
+
+**문제:**
+```
+OperationalError: unable to open database file
+```
+
+**해결:**
+```bash
+# 데이터베이스 초기화
+python storage/database.py
+
+# 또는 main.py 실행으로 자동 초기화
+python main.py
+```
+
+### 5. 계정 정보가 표시되지 않음
+
+**문제:**
+- 출력에 계정이 0개로 표시됨
+
+**해결:**
+```bash
+# 권한 확인
+ls -la /etc/passwd
+ls -la /etc/shadow
+
+# root 권한으로 실행
+sudo python scripts/account_mgmt/account_checker.py
+```
+
+---
+
+## 📝 테스트
+
+### 단위 테스트
+```bash
+# 각 스크립트 개별 실행
+sudo python scripts/account_mgmt/account_checker.py
 sudo python scripts/account_mgmt/inactive_finder.py
+sudo python scripts/account_mgmt/password_policy.py
+```
 
-# 또는 읽기 권한 부여
-sudo chmod +r /var/log/wtmp
-sudo chmod +r /var/log/lastlog
+### 통합 테스트
+```bash
+# 전체 계정 관리 스크립트 순차 실행
+for script in account_checker.py inactive_finder.py password_policy.py; do
+    echo "Running $script..."
+    sudo python scripts/account_mgmt/$script
+    echo "---"
+done
+```
+
+### 테스트 계정 생성 (테스트용)
+```bash
+# 테스트 계정 생성
+sudo useradd -m -s /bin/bash testuser1
+sudo useradd -m -s /bin/bash testuser2
+
+# 90일 이상 미사용으로 설정 (테스트)
+sudo chage -d $(date -d "100 days ago" +%Y-%m-%d) testuser1
+
+# 비밀번호 만료 테스트
+sudo chage -M 1 testuser2  # 1일 후 만료
+echo "testuser2:password" | sudo chpasswd
 ```
 
 ---
 
-### ❌ ModuleNotFoundError: No module named 'win32net'
+## 🎯 향후 계획
 
-**원인:** Windows에서 pywin32 미설치
-
-**해결:**
-```bash
-pip install pywin32
-```
-
----
-
-### ❌ lastlog command not found
-
-**원인:** lastlog 명령어 미설치
-
-**해결:**
-```bash
-# Ubuntu/Debian
-sudo apt-get install util-linux
-
-# RHEL/CentOS
-sudo yum install util-linux
-```
-
----
-
-## 📈 통계 및 리포트
-
-### 주간 리포트 생성
-
-```python
-#!/usr/bin/env python3
-"""주간 계정 관리 리포트 생성"""
-
-from scripts.account_mgmt.account_checker import AccountChecker
-from scripts.account_mgmt.inactive_finder import InactiveFinder
-from datetime import datetime
-
-def generate_weekly_report():
-    print("=" * 60)
-    print("주간 계정 관리 리포트")
-    print(f"생성일: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
-    print()
-    
-    # 계정 정책 검사
-    print("1. 계정 정책 검사")
-    print("-" * 60)
-    checker = AccountChecker()
-    account_stats = checker.check_all()
-    print(f"전체 계정: {account_stats['total_accounts']}")
-    print(f"사용자 계정: {account_stats['user_accounts']}")
-    print(f"시스템 계정: {account_stats['system_accounts']}")
-    print(f"관리자 계정: {account_stats['admin_accounts']}")
-    print(f"의심스러운 계정: {account_stats['suspicious_accounts']}")
-    print()
-    
-    # 장기 미사용 계정
-    print("2. 장기 미사용 계정")
-    print("-" * 60)
-    finder = InactiveFinder()
-    inactive_stats = finder.check_all()
-    print(f"장기 미사용 계정: {inactive_stats['inactive_accounts']}")
-    print(f"한 번도 미로그인: {inactive_stats['never_logged_in']}")
-    print()
-    
-    print("=" * 60)
-    print("리포트 생성 완료")
-    print("=" * 60)
-
-if __name__ == "__main__":
-    generate_weekly_report()
-```
-
-실행:
-```bash
-sudo python weekly_account_report.py > reports/account_report_$(date +%Y-%m-%d).txt
-```
+- [ ] 웹 대시보드에서 계정 관리 결과 시각화
+- [ ] 이메일/Slack 알림 통합
+- [ ] 계정 자동 비활성화 기능
+- [ ] 계정 변경 이력 추적
+- [ ] 정책 위반 자동 복구
+- [ ] Active Directory 연동 (Windows)
+- [ ] LDAP 지원
+- [ ] 다단계 인증(MFA) 상태 확인
 
 ---
 
 ## 📚 참고 자료
 
-### Linux 계정 관리
-- [User and Group Management](https://www.linux.com/training-tutorials/understanding-users-and-groups-linux/)
-- [Linux PAM](https://linux.die.net/man/5/pam)
-- [lastlog Command](https://man7.org/linux/man-pages/man8/lastlog.8.html)
+### Linux
+- [passwd 명령어](https://linux.die.net/man/1/passwd)
+- [lastlog 명령어](https://linux.die.net/man/8/lastlog)
+- [/etc/shadow 파일 형식](https://www.cyberciti.biz/faq/understanding-etcshadow-file/)
+- [/etc/login.defs](https://man7.org/linux/man-pages/man5/login.defs.5.html)
 
-### Windows 계정 관리
-- [NetUserEnum](https://docs.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netuserenum)
-- [NetUserGetInfo](https://docs.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netusergetinfo)
+### Windows
+- [Win32 API 문서](https://docs.microsoft.com/en-us/windows/win32/)
+- [pywin32 문서](https://github.com/mhammond/pywin32)
+- [사용자 계정 관리](https://docs.microsoft.com/en-us/windows/security/identity-protection/)
 
----
-
-## ✅ 체크리스트
-
-계정 관리 스크립트 사용 전 확인:
-
-- [ ] Python 3.10+ 설치
-- [ ] 필요한 라이브러리 설치 (pywin32 for Windows)
-- [ ] 적절한 권한 (sudo for Linux)
-- [ ] 프로젝트 루트에서 실행
-- [ ] 데이터베이스 초기화 완료
-- [ ] 로그 디렉토리 권한 확인
+### 보안 모범 사례
+- [NIST 비밀번호 가이드라인](https://pages.nist.gov/800-63-3/)
+- [CIS 벤치마크](https://www.cisecurity.org/cis-benchmarks/)
 
 ---
 
-## 🔮 향후 개발 계획
+## ⚠️ 보안 참고사항
 
-### password_policy.py (예정)
-- [ ] 비밀번호 만료 임박 탐지 (7일 이내)
-- [ ] 비밀번호 복잡도 검증
-- [ ] 기본 비밀번호 사용 탐지
-- [ ] 비밀번호 변경 이력 추적
-- [ ] 정책 준수율 통계
+### 중요 권한 요구사항
+1. **Linux:** `/etc/shadow` 파일 읽기 권한 (root 필요)
+2. **Windows:** 관리자 권한 필요
+3. **데이터베이스:** 쓰기 권한 필요
 
-### 고급 기능
-- [ ] 계정 변경 이력 추적 (audit log)
-- [ ] 그룹 멤버십 변경 모니터링
-- [ ] 특정 사용자 활동 패턴 분석
-- [ ] 이상 계정 활동 탐지 (AI/ML)
-- [ ] Active Directory 연동 (Windows)
+### 권장 사항
+- 정기적으로 스크립트 실행 (최소 주 1회)
+- 의심스러운 계정 발견 시 즉시 조치
+- 장기 미사용 계정은 비활성화 또는 삭제
+- 비밀번호 만료 전 사용자에게 통지
+- 로그 및 알림 기록 보관
 
----
-
-## 📞 문의
-
-계정 관리 스크립트 관련 문의:
-
-**팀 1조** - 정보보안학과
-- **팀장**: 남수민 (2184039)
-- **팀원**: 김규민 (2084002)
-- **팀원**: 임준호 (2184)
-
-**프로젝트**: [https://github.com/Vampirk/automation-platform](https://github.com/Vampirk/automation-platform)
+### 주의사항
+- 프로덕션 환경에서는 테스트 후 사용
+- 계정 삭제 전 백업 필수
+- 시스템 계정 수정 시 각별히 주의
+- 정책 변경은 보안 팀과 협의 후 진행
 
 ---
 
-**⭐ 정상 작동 확인 완료! 계정 보안 관리를 자동화하세요!**
+**💡 Tip:** 스케줄러에 등록하여 자동으로 계정 관리를 수행하세요!

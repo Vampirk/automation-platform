@@ -14,7 +14,8 @@ sys.path.insert(0, str(project_root))
 
 from config import settings, print_settings
 from core.logger import get_logger
-from core.scheduler import scheduler
+# ⚠️ 순환 참조 방지: scheduler는 필요할 때 import
+# from core.scheduler import scheduler
 from storage import init_database, db, Job, JobType
 
 logger = get_logger()
@@ -25,6 +26,7 @@ class AutomationPlatform:
     
     def __init__(self):
         self.running = False
+        self.scheduler = None
         
         # 시그널 핸들러 등록 (Ctrl+C 처리)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -49,9 +51,11 @@ class AutomationPlatform:
         logger.info("Initializing database...")
         init_database()
         
-        # 스케줄러 초기화
+        # 스케줄러 초기화 (lazy import)
         logger.info("Initializing scheduler...")
-        scheduler.initialize()
+        from core.scheduler import scheduler
+        self.scheduler = scheduler
+        self.scheduler.initialize()
         
         logger.info("✅ Platform initialized successfully")
     
@@ -93,19 +97,17 @@ class AutomationPlatform:
         
         # 데이터베이스에서 작업 로드
         logger.info("Loading jobs from database...")
-        scheduler.load_jobs_from_database()
+        self.scheduler.load_jobs_from_database()
         
         # 스케줄러 시작
-        scheduler.start()
+        self.scheduler.start()
         
         self.running = True
         logger.info("=" * 60)
-        logger.info("✅ Platform is now running")
-        logger.info("💡 Press Ctrl+C to stop")
+        logger.info("✅ Platform started successfully")
         logger.info("=" * 60)
-        
-        # 상태 출력
-        scheduler.print_status()
+        logger.info("💡 Press Ctrl+C to stop")
+        logger.info("")
     
     def stop(self):
         """플랫폼 정지"""
@@ -116,10 +118,12 @@ class AutomationPlatform:
         logger.info("⏹️  Stopping Automation Platform")
         logger.info("=" * 60)
         
-        scheduler.stop()
+        # 스케줄러 정지
+        if self.scheduler:
+            self.scheduler.stop()
         
         self.running = False
-        logger.info("✅ Platform stopped successfully")
+        logger.info("✅ Platform stopped")
     
     def run(self):
         """플랫폼 실행 (무한 루프)"""
@@ -127,8 +131,6 @@ class AutomationPlatform:
             while self.running:
                 time.sleep(1)
         except KeyboardInterrupt:
-            logger.info("\n⚠️  Interrupted by user")
-        finally:
             self.stop()
 
 
@@ -136,18 +138,25 @@ def main():
     """메인 함수"""
     platform = AutomationPlatform()
     
-    # 초기화
-    platform.initialize()
+    try:
+        # 초기화
+        platform.initialize()
+        
+        # 기본 작업 설정
+        platform.setup_default_jobs()
+        
+        # 시작
+        platform.start()
+        
+        # 실행
+        platform.run()
     
-    # 기본 작업 설정
-    platform.setup_default_jobs()
+    except Exception as e:
+        logger.error(f"Fatal error: {e}", exc_info=True)
+        return 1
     
-    # 시작
-    platform.start()
-    
-    # 실행
-    platform.run()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

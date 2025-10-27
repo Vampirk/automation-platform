@@ -16,7 +16,9 @@ from apscheduler.events import (
 )
 from config import settings
 from core.logger import get_logger
-from storage import db, Job, JobExecution, JobStatus
+
+# ⚠️ 순환 참조 방지: storage는 함수 내에서 import
+# from storage import db, Job, JobExecution, JobStatus
 
 logger = get_logger()
 
@@ -241,6 +243,8 @@ class JobScheduler:
         """
         데이터베이스에서 활성화된 작업들을 스케줄러에 로드
         """
+        # ⚠️ 여기서 import (순환 참조 방지)
+        from storage import db, Job
         from core.executor import JobExecutor
         
         with db.session_scope() as session:
@@ -260,37 +264,13 @@ class JobScheduler:
                     # 스케줄러에 추가
                     self.add_job(
                         func=job_func,
-                        job_id=f"job_{job.id}",
+                        job_id=str(job.id),
                         cron_expression=job.cron_expression
                     )
                     
-                    self._job_map[f"job_{job.id}"] = job.id
                     logger.info(f"Loaded job: {job.name} (ID: {job.id})")
-                    
                 except Exception as e:
                     logger.error(f"Failed to load job {job.name}: {e}")
-    
-    def print_status(self):
-        """스케줄러 상태 출력"""
-        print("\n" + "=" * 60)
-        print("📅 Scheduler Status")
-        print("=" * 60)
-        print(f"Running: {'✅ Yes' if self._running else '❌ No'}")
-        print(f"Platform: {platform.system()}")
-        print(f"Timezone: {settings.scheduler_timezone}")
-        
-        jobs = self.get_jobs()
-        print(f"\nScheduled Jobs: {len(jobs)}")
-        
-        if jobs:
-            for job in jobs:
-                print(f"\n  🔹 {job.id}")
-                print(f"     Next run: {job.next_run_time}")
-                print(f"     Trigger: {job.trigger}")
-        else:
-            print("  No jobs scheduled")
-        
-        print("=" * 60)
 
 
 # 전역 스케줄러 인스턴스
@@ -298,13 +278,11 @@ scheduler = JobScheduler()
 
 
 if __name__ == "__main__":
-    import time
-    
-    # 테스트 함수
+    # 테스트
     def test_job():
-        print(f"🎯 Test job executed at {datetime.now()}")
-        logger.info("Test job executed")
+        print("Test job executed!")
     
+    print("=" * 60)
     print("🧪 Scheduler Test")
     print("=" * 60)
     
@@ -312,21 +290,21 @@ if __name__ == "__main__":
     scheduler.initialize()
     scheduler.start()
     
-    # 테스트 작업 추가 (10초마다 실행)
+    # 10초마다 실행되는 테스트 작업 추가
     scheduler.add_job(
         func=test_job,
         job_id="test_job",
         interval_seconds=10
     )
     
-    # 상태 출력
-    scheduler.print_status()
+    print("\n✅ Test job added (runs every 10 seconds)")
+    print("Press Ctrl+C to stop\n")
     
     try:
-        print("\n⏳ Running for 30 seconds...")
-        time.sleep(30)
+        import time
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user")
-    finally:
+        print("\n\n⏹️  Stopping scheduler...")
         scheduler.stop()
-        print("✅ Test completed")
+        print("✅ Scheduler stopped")

@@ -11,11 +11,12 @@ pydantic = "~=2.5.0"
 pydantic-settings = "~=2.1.0"
 python-dotenv = "~=1.0.0"
 loguru = "~=0.7.2"
-fastapi = "~=0.104.1"
-uvicorn = {extras = ["standard"], version = "~=0.24.0"}
 requests = "~=2.31.0"
 watchdog = "*"
 smart-open = "*"
+fastapi = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+python-multipart = "*"
 
 [dev-packages]
 pytest = "~=7.4.3"
