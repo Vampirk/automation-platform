@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자동화 플랫폼 대시보드</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-robot"></i>
+            <h2>AutoPlatform</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="#" class="nav-item active" data-page="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>대시보드</span>
+            </a>
+            <a href="#" class="nav-item" data-page="jobs">
+                <i class="fas fa-tasks"></i>
+                <span>작업 관리</span>
+            </a>
+            <a href="#" class="nav-item" data-page="monitoring">
+                <i class="fas fa-server"></i>
+                <span>시스템 모니터링</span>
+            </a>
+            <a href="#" class="nav-item" data-page="executions">
+                <i class="fas fa-history"></i>
+                <span>실행 이력</span>
+            </a>
+            <a href="#" class="nav-item" data-page="notifications">
+                <i class="fas fa-bell"></i>
+                <span>알림</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="api-status">
+                <i class="fas fa-circle" id="api-status-icon"></i>
+                <span id="api-status-text">연결 중...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+        <!-- 헤더 -->
+        <header class="header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="page-title">대시보드</h1>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>관리자</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 대시보드 페이지 -->
+        <div class="page-content active" id="dashboard-page">
+            <!-- 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-jobs">0</h3>
+                        <p>전체 작업</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="enabled-jobs">0</h3>
+                        <p>활성 작업</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-executions">0</h3>
+                        <p>총 실행 횟수</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="success-rate">0%</h3>
+                        <p>성공률</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 그리드 -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>실행 통계</h3>
+                    <canvas id="executionChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>시스템 리소스</h3>
+                    <canvas id="resourceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 최근 활동 -->
+            <div class="recent-activity">
+                <h3>최근 실행 이력</h3>
+                <div class="activity-list" id="recent-executions">
+                    <div class="loading">데이터를 불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 작업 관리 페이지 -->
+        <div class="page-content" id="jobs-page">
+            <div class="page-header">
+                <h2>작업 관리</h2>
+                <button class="btn btn-primary" id="createJobBtn">
+                    <i class="fas fa-plus"></i> 새 작업
+                </button>
+            </div>
+            <div class="filters">
+                <input type="text" placeholder="작업 검색..." id="jobSearch" class="search-input">
+                <select id="jobTypeFilter" class="filter-select">
+                    <option value="">모든 유형</option>
+                    <option value="monitoring">모니터링</option>
+                    <option value="security">보안</option>
+                    <option value="log_analysis">로그 분석</option>
+                    <option value="account">계정 관리</option>
+                </select>
+                <select id="jobStatusFilter" class="filter-select">
+                    <option value="">모든 상태</option>
+                    <option value="true">활성화</option>
+                    <option value="false">비활성화</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>이름</th>
+                            <th>유형</th>
+                            <th>스케줄</th>
+                            <th>상태</th>
+                            <th>마지막 실행</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-tbody">
+                        <tr>
+                            <td colspan="7" class="loading">데이터를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 시스템 모니터링 페이지 -->
+        <div class="page-content" id="monitoring-page">
+            <h2>실시간 시스템 모니터링</h2>
+            <div class="monitoring-grid">
+                <div class="monitor-card">
+                    <div class="monitor-header">
+                        <i class="fas fa-microchip"></i>
+                        <h3>CPU 사용률</h3>
+                    </div>
+                    <div class="monitor-value">
+                        <span id="cpu-percent" class="value-large">0%</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="cpu-progress"></div>
+                        </div>
+                        <p class="monitor-detail">코어: <span id="cpu-count">0</span>개</p>
+                    </div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-header">
+                        <i class="fas fa-memory"></i>
+                        <h3>메모리 사용률</h3>
+                    </div>
+                    <div class="monitor-value">
+                        <span id="memory-percent" class="value-large">0%</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="memory-progress"></div>
+                        </div>
+                        <p class="monitor-detail">
+                            <span id="memory-used">0</span> GB / <span id="memory-total">0</span> GB
+                        </p>
+                    </div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-header">
+                        <i class="fas fa-hdd"></i>
+                        <h3>디스크 사용률</h3>
+                    </div>
+                    <div class="monitor-value">
+                        <span id="disk-percent" class="value-large">0%</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="disk-progress"></div>
+                        </div>
+                        <p class="monitor-detail">
+                            <span id="disk-used">0</span> GB / <span id="disk-total">0</span> GB
+                        </p>
+                    </div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-header">
+                        <i class="fas fa-network-wired"></i>
+                        <h3>네트워크</h3>
+                    </div>
+                    <div class="monitor-value">
+                        <div class="network-stats">
+                            <div class="network-item">
+                                <i class="fas fa-arrow-up"></i>
+                                <span id="network-sent">0</span> MB
+                            </div>
+                            <div class="network-item">
+                                <i class="fas fa-arrow-down"></i>
+                                <span id="network-recv">0</span> MB
+                            </div>
+                        </div>
+                        <p class="monitor-detail">호스트: <span id="hostname">-</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-card full-width">
+                <h3>시스템 리소스 추이</h3>
+                <canvas id="systemTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 실행 이력 페이지 -->
+        <div class="page-content" id="executions-page">
+            <h2>작업 실행 이력</h2>
+            <div class="filters">
+                <select id="executionStatusFilter" class="filter-select">
+                    <option value="">모든 상태</option>
+                    <option value="success">성공</option>
+                    <option value="failed">실패</option>
+                    <option value="running">실행 중</option>
+                </select>
+                <input type="date" id="executionDateFilter" class="filter-select">
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="executions-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>작업명</th>
+                            <th>상태</th>
+                            <th>시작 시간</th>
+                            <th>종료 시간</th>
+                            <th>소요 시간</th>
+                            <th>상세</th>
+                        </tr>
+                    </thead>
+                    <tbody id="executions-tbody">
+                        <tr>
+                            <td colspan="7" class="loading">데이터를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 알림 페이지 -->
+        <div class="page-content" id="notifications-page">
+            <h2>알림 관리</h2>
+            <div class="filters">
+                <select id="notificationLevelFilter" class="filter-select">
+                    <option value="">모든 레벨</option>
+                    <option value="INFO">정보</option>
+                    <option value="WARNING">경고</option>
+                    <option value="ERROR">오류</option>
+                    <option value="CRITICAL">치명적</option>
+                </select>
+            </div>
+            <div class="notifications-list" id="notifications-list">
+                <div class="loading">데이터를 불러오는 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 -->
+    <div class="modal" id="jobModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">새 작업 생성</h3>
+                <button class="close-btn" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="jobForm">
+                    <div class="form-group">
+                        <label>작업 이름 *</label>
+                        <input type="text" id="job-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>설명</label>
+                        <textarea id="job-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>작업 유형 *</label>
+                        <select id="job-type" required>
+                            <option value="monitoring">모니터링</option>
+                            <option value="security">보안</option>
+                            <option value="log_analysis">로그 분석</option>
+                            <option value="account">계정 관리</option>
+                            <option value="custom">커스텀</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>스크립트 경로 *</label>
+                        <input type="text" id="job-script-path" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cron 표현식 *</label>
+                        <input type="text" id="job-cron" placeholder="0 * * * *" required>
+                        <small>예: "0 * * * *" = 매시간, "*/5 * * * *" = 5분마다</small>
+                    </div>
+                    <div class="form-group">
+                        <label>타임아웃 (초)</label>
+                        <input type="number" id="job-timeout" value="300">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="job-enabled" checked>
+                            활성화
+                        </label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelModal">취소</button>
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- 메인 JS -->
+    <script src="app.js"></script>
+</body>
+</html>

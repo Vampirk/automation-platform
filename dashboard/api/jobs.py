@@ -1,6 +1,10 @@
+#!/usr/bin/env python3
 """
 작업 관리 API
 Job CRUD 및 실행 관리
+
+수정 사항:
+  - 2025-10-27: /jobs/executions 엔드포인트 추가 (전체 실행 이력)
 """
 import sys
 from pathlib import Path
@@ -92,18 +96,9 @@ def get_job(job_id: int, db: Session = Depends(get_database)):
 
 @router.post("/", response_model=schemas.JobResponse, status_code=status.HTTP_201_CREATED)
 def create_job(job_data: schemas.JobCreate, db: Session = Depends(get_database)):
-    """
-    작업 생성
-    
-    - **name**: 작업 이름 (고유값)
-    - **description**: 작업 설명
-    - **job_type**: 작업 유형
-    - **script_path**: 스크립트 경로
-    - **cron_expression**: Cron 표현식 (예: "0 * * * *")
-    - **enabled**: 활성화 여부
-    """
+    """작업 생성"""
     try:
-        # 중복 이름 체크
+        # 이름 중복 확인
         existing = db.query(Job).filter(Job.name == job_data.name).first()
         if existing:
             raise HTTPException(
@@ -111,31 +106,8 @@ def create_job(job_data: schemas.JobCreate, db: Session = Depends(get_database))
                 detail=f"Job with name '{job_data.name}' already exists"
             )
         
-        # JobType enum 검증
-        try:
-            job_type_enum = JobType(job_data.job_type)
-        except ValueError:
-            valid_types = [t.value for t in JobType]
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid job_type. Must be one of: {valid_types}"
-            )
-        
         # 작업 생성
-        job = Job(
-            name=job_data.name,
-            description=job_data.description,
-            job_type=job_type_enum,
-            script_path=job_data.script_path,
-            script_args=job_data.script_args,
-            cron_expression=job_data.cron_expression,
-            enabled=job_data.enabled,
-            max_retries=job_data.max_retries,
-            timeout_seconds=job_data.timeout_seconds,
-            priority=job_data.priority,
-            created_by=job_data.created_by
-        )
-        
+        job = Job(**job_data.dict())
         db.add(job)
         db.commit()
         db.refresh(job)
@@ -155,11 +127,7 @@ def create_job(job_data: schemas.JobCreate, db: Session = Depends(get_database))
 
 
 @router.put("/{job_id}", response_model=schemas.JobResponse)
-def update_job(
-    job_id: int,
-    job_data: schemas.JobUpdate,
-    db: Session = Depends(get_database)
-):
+def update_job(job_id: int, job_data: schemas.JobUpdate, db: Session = Depends(get_database)):
     """작업 수정"""
     job = db.query(Job).filter(Job.id == job_id).first()
     
@@ -170,34 +138,10 @@ def update_job(
         )
     
     try:
-        # 업데이트할 필드만 적용
-        update_data = job_data.model_dump(exclude_unset=True)
-        
-        # JobType 검증 (업데이트 시)
-        if "job_type" in update_data:
-            try:
-                update_data["job_type"] = JobType(update_data["job_type"])
-            except ValueError:
-                valid_types = [t.value for t in JobType]
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid job_type. Must be one of: {valid_types}"
-                )
-        
-        # 이름 중복 체크
-        if "name" in update_data:
-            existing = db.query(Job).filter(
-                Job.name == update_data["name"],
-                Job.id != job_id
-            ).first()
-            if existing:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Job with name '{update_data['name']}' already exists"
-                )
-        
-        for key, value in update_data.items():
-            setattr(job, key, value)
+        # 업데이트할 필드만 수정
+        update_data = job_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(job, field, value)
         
         job.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -206,8 +150,6 @@ def update_job(
         logger.info(f"Job updated: {job.name} (ID: {job.id})")
         return job
     
-    except HTTPException:
-        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating job: {e}")
@@ -217,7 +159,7 @@ def update_job(
         )
 
 
-@router.delete("/{job_id}", response_model=schemas.MessageResponse)
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(job_id: int, db: Session = Depends(get_database)):
     """작업 삭제"""
     job = db.query(Job).filter(Job.id == job_id).first()
@@ -229,16 +171,9 @@ def delete_job(job_id: int, db: Session = Depends(get_database)):
         )
     
     try:
-        job_name = job.name
         db.delete(job)
         db.commit()
-        
-        logger.info(f"Job deleted: {job_name} (ID: {job_id})")
-        return schemas.MessageResponse(
-            message="Job deleted successfully",
-            detail=f"Job '{job_name}' (ID: {job_id}) has been deleted"
-        )
-    
+        logger.info(f"Job deleted: {job.name} (ID: {job.id})")
     except Exception as e:
         db.rollback()
         logger.error(f"Error deleting job: {e}")
@@ -354,6 +289,62 @@ def execute_job(job_id: int, db: Session = Depends(get_database)):
 
 # ========== 작업 실행 이력(JobExecution) ==========
 
+@router.get("/executions", response_model=schemas.JobExecutionListResponse)
+def list_all_executions(
+    db: Session = Depends(get_database),
+    params: CommonQueryParams = Depends(),
+    status_filter: Optional[str] = Query(None, description="상태 필터")
+):
+    """
+    ⭐ 전체 작업 실행 이력 조회 (프론트엔드용)
+    
+    모든 작업의 실행 이력을 조회합니다.
+    """
+    try:
+        query = db.query(JobExecution)
+        
+        # 상태 필터
+        if status_filter:
+            try:
+                status_enum = JobStatus(status_filter)
+                query = query.filter(JobExecution.status == status_enum)
+            except ValueError:
+                valid_statuses = [s.value for s in JobStatus]
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid status. Must be one of: {valid_statuses}"
+                )
+        
+        # 전체 개수
+        total = query.count()
+        
+        # 정렬 (기본: 최신순)
+        order_column = getattr(JobExecution, params.sort_by, JobExecution.started_at)
+        if params.order == "desc":
+            query = query.order_by(desc(order_column))
+        else:
+            query = query.order_by(asc(order_column))
+        
+        # 페이지네이션
+        executions = query.offset(params.skip).limit(params.limit).all()
+        
+        # Job 이름 추가
+        for execution in executions:
+            if execution.job:
+                execution.job_name = execution.job.name
+        
+        return schemas.JobExecutionListResponse(total=total, items=executions)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing executions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list executions: {str(e)}"
+        )
+
+
 @router.get("/{job_id}/executions", response_model=schemas.JobExecutionListResponse)
 def list_job_executions(
     job_id: int,
@@ -361,7 +352,7 @@ def list_job_executions(
     params: CommonQueryParams = Depends(),
     status_filter: Optional[str] = Query(None, description="상태 필터")
 ):
-    """작업 실행 이력 조회"""
+    """특정 작업의 실행 이력 조회"""
     # Job 존재 확인
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:

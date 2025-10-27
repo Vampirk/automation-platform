@@ -14,11 +14,11 @@ from apscheduler.events import (
     EVENT_JOB_EXECUTED, EVENT_JOB_ERROR,
     EVENT_JOB_ADDED, EVENT_JOB_REMOVED
 )
+
+# ⚠️ 순환 참조 방지: 최상단에서는 config와 logger만 import
+# storage 관련은 함수 내에서만 import
 from config import settings
 from core.logger import get_logger
-
-# ⚠️ 순환 참조 방지: storage는 함수 내에서 import
-# from storage import db, Job, JobExecution, JobStatus
 
 logger = get_logger()
 
@@ -242,8 +242,9 @@ class JobScheduler:
     def load_jobs_from_database(self):
         """
         데이터베이스에서 활성화된 작업들을 스케줄러에 로드
+        ⚠️ storage import는 여기서만 수행 (순환 참조 방지)
         """
-        # ⚠️ 여기서 import (순환 참조 방지)
+        # 함수 내에서 import (lazy import)
         from storage import db, Job
         from core.executor import JobExecutor
         

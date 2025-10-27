@@ -1,6 +1,7 @@
 """
-Dashboard API 패키지
-FastAPI 기반 REST API 서버
+Dashboard API Package
 """
+from dashboard.api import schemas
+from dashboard.api import dependencies
 
-__version__ = "1.0.0"
+__all__ = ['schemas', 'dependencies']
