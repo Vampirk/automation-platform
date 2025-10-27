@@ -31,6 +31,7 @@
 - **모니터링**: psutil (시스템 메트릭)
 - **로깅**: loguru (구조화된 로깅)
 - **프론트엔드**: Vanilla JavaScript, Chart.js
+- **의존성 관리**: Pipenv
 
 ### 시스템 요구사항
 
@@ -126,34 +127,22 @@ git clone https://github.com/Vampirk/automation-platform.git
 cd automation-platform
 ```
 
-### 2. 가상환경 생성 및 활성화
-
-**Linux/macOS**
+### 2. Pipenv 설치 및 의존성 설치
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+# Pipenv 설치 (없는 경우)
+pip install pipenv
+
+# 의존성 설치 및 가상환경 생성
+pipenv install
+
+# 개발 의존성 포함 (선택사항)
+pipenv install --dev
 ```
 
-**Windows**
+### 3. 가상환경 활성화
 ```bash
-python -m venv venv
-venv\Scripts\activate
+pipenv shell
 ```
-
-### 3. 의존성 설치
-```bash
-pip install -r requirements.txt
-```
-
-주요 패키지:
-- apscheduler: 작업 스케줄러
-- fastapi: REST API 프레임워크
-- uvicorn: ASGI 서버
-- sqlalchemy: ORM
-- pydantic: 데이터 검증
-- psutil: 시스템 메트릭
-- loguru: 로깅
-- watchdog: 파일 시스템 감시
 
 ### 4. 환경 설정
 ```bash
@@ -183,14 +172,14 @@ python -c "from storage import init_database; init_database()"
 
 ### 스케줄러 실행
 ```bash
-python main.py
+pipenv run python main.py
 ```
 
 등록된 모든 작업이 Cron 표현식에 따라 자동 실행됩니다.
 
 ### 작업 등록
 ```bash
-python register_jobs.py
+pipenv run python register_jobs.py
 ```
 
 사전 정의된 작업(시스템 모니터링, 보안 점검, 로그 분석 등)을 데이터베이스에 등록합니다.
@@ -199,50 +188,50 @@ python register_jobs.py
 
 **시스템 모니터링**
 ```bash
-python scripts/monitoring/system_monitor.py
+pipenv run python scripts/monitoring/system_monitor.py
 ```
 
 **보안 점검**
 ```bash
 # 종합 보안 점검
-sudo python scripts/security/security_checker.py
+pipenv run sudo python scripts/security/security_checker.py
 
 # 포트 스캔 (빠른 스캔)
-python scripts/security/port_scanner.py --mode quick
+pipenv run python scripts/security/port_scanner.py --mode quick
 
 # 파일 권한 검사
-sudo python scripts/security/permission_checker.py --mode critical
+pipenv run sudo python scripts/security/permission_checker.py --mode critical
 ```
 
 **로그 분석**
 ```bash
 # 실시간 로그 감시
-sudo python scripts/log_analysis/log_analyzer.py
+pipenv run sudo python scripts/log_analysis/log_analyzer.py
 
 # 패턴 탐지
-sudo python scripts/log_analysis/pattern_detector.py
+pipenv run sudo python scripts/log_analysis/pattern_detector.py
 
 # 리포트 생성
-sudo python scripts/log_analysis/report_generator.py
+pipenv run sudo python scripts/log_analysis/report_generator.py
 ```
 
 **계정 관리**
 ```bash
 # 계정 정책 검사
-sudo python scripts/account_mgmt/account_checker.py
+pipenv run sudo python scripts/account_mgmt/account_checker.py
 
 # 장기 미사용 계정 탐지
-sudo python scripts/account_mgmt/inactive_finder.py
+pipenv run sudo python scripts/account_mgmt/inactive_finder.py
 ```
 
 ### API 서버 실행
 ```bash
-python dashboard/api/main.py
+pipenv run python dashboard/api/main.py
 ```
 
 또는
 ```bash
-uvicorn dashboard.api.main:app --host 0.0.0.0 --port 8000
+pipenv run uvicorn dashboard.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 API 문서: `http://localhost:8000/docs`
@@ -250,7 +239,7 @@ API 문서: `http://localhost:8000/docs`
 ### 웹 대시보드 실행
 ```bash
 cd dashboard/frontend
-python -m http.server 8080
+pipenv run python -m http.server 8080
 ```
 
 브라우저에서 `http://localhost:8080` 접속
@@ -306,7 +295,7 @@ curl -X POST http://localhost:8000/jobs/1/execute
 ```bash
 cd scripts/security
 chmod +x test_security.sh
-./test_security.sh
+pipenv run ./test_security.sh
 ```
 
 6개 자동화 테스트 실행:
@@ -323,13 +312,13 @@ chmod +x test_security.sh
 ```bash
 cd scripts/log_analysis
 chmod +x quick_test.sh
-./quick_test.sh
+pipenv run ./quick_test.sh
 ```
 
 **전체 테스트 (10개 테스트, 약 60초)**
 ```bash
 chmod +x test_log_analysis.sh
-./test_log_analysis.sh
+pipenv run ./test_log_analysis.sh
 ```
 
 테스트 항목:
@@ -455,63 +444,25 @@ automation-platform/
 - `core/executor.py`: 스크립트 실행 및 결과 기록
 - `core/logger.py`: 구조화된 로깅 시스템
 
-**데이터 저장**# 프로젝트 구조
-```
-automation-platform/
-├── main.py                     # 메인 진입점
-├── register_jobs.py            # 작업 등록 스크립트
-├── config/                     # 설정 관리
-│   ├── __init__.py
-│   └── settings.py
-├── core/                       # 핵심 엔진
-│   ├── __init__.py
-│   ├── logger.py              # 로깅 시스템
-│   ├── scheduler.py           # 작업 스케줄러
-│   └── executor.py            # 작업 실행기
-├── storage/                    # 데이터 저장
-│   ├── __init__.py
-│   ├── database.py            # DB 연결 관리
-│   └── models.py              # 데이터 모델 (ORM)
-├── scripts/                    # 자동화 스크립트
-│   ├── monitoring/            # 시스템 모니터링
-│   │   ├── __init__.py
-│   │   └── system_monitor.py
-│   ├── security/              # 보안 점검
-│   │   ├── __init__.py
-│   │   ├── security_checker.py
-│   │   ├── port_scanner.py
-│   │   ├── permission_checker.py
-│   │   └── test_security.sh
-│   ├── log_analysis/          # 로그 분석
-│   │   ├── __init__.py
-│   │   ├── log_analyzer.py
-│   │   ├── pattern_detector.py
-│   │   ├── report_generator.py
-│   │   ├── quick_test.sh
-│   │   └── test_log_analysis.sh
-│   └── account_mgmt/          # 계정 관리
-│       ├── __init__.py
-│       ├── account_checker.py
-│       └── inactive_finder.py
-├── dashboard/                  # 웹 대시보드
-│   ├── api/                   # REST API
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── dependencies.py
-│   │   ├── schemas.py
-│   │   ├── jobs.py
-│   │   └── monitoring.py
-│   └── frontend/              # 프론트엔드
-│       ├── index.html
-│       ├── style.css
-│       └── app.js
-├── logs/                       # 로그 파일
-├── data/                       # 데이터베이스 파일
-├── reports/                    # 생성된 리포트
-├── .env                        # 환경 변수
-├── requirements.txt            # Python 의존성
-└── README.md
-```스트 (10개)
+**데이터 저장**
+- `storage/models.py`: Job, JobExecution, SystemMetric 등 ORM 모델
+- `storage/database.py`: SQLAlchemy 기반 데이터베이스 연결 관리
+
+**자동화 스크립트**
+- `scripts/monitoring/`: 시스템 리소스 모니터링
+- `scripts/security/`: 포트 스캔, 권한 검사, 보안 점검
+- `scripts/log_analysis/`: 로그 감시, 패턴 탐지, 리포트 생성
+- `scripts/account_mgmt/`: 계정 정책 검사, 미사용 계정 탐지
+
+**대시보드**
+- `dashboard/api/`: FastAPI 기반 REST API 서버
+- `dashboard/api/start_api.sh/bat`: API 서버 단독 실행 스크립트
+- `dashboard/frontend/`: HTML/CSS/JavaScript 프론트엔드
+
+**테스트 스크립트**
+- `scripts/security/test_security.sh`: 보안 스크립트 자동화 테스트 (6개)
+- `scripts/log_analysis/quick_test.sh`: 로그 분석 빠른 테스트 (3개)
+- `scripts/log_analysis/test_log_analysis.sh`: 로그 분석 전체 테스트 (10개)
 
 **생성 디렉토리**
 - `logs/`: 애플리케이션 로그 파일 저장
@@ -537,6 +488,55 @@ automation-platform/
 - 로그 분석: 13개 자동화 테스트
 - 전체 테스트 커버리지: 67%
 
+## 주요 패키지 (Pipfile)
+
+### 프로덕션 의존성
+- apscheduler: 작업 스케줄러
+- fastapi: REST API 프레임워크
+- uvicorn: ASGI 서버
+- sqlalchemy: ORM
+- pydantic: 데이터 검증
+- psutil: 시스템 메트릭
+- loguru: 로깅
+- watchdog: 파일 시스템 감시
+- python-nmap: 포트 스캔
+
+### 개발 의존성
+- pytest: 테스트 프레임워크
+- pytest-asyncio: 비동기 테스트
+- black: 코드 포매터
+- flake8: 린터
+
+## Pipenv 명령어
+```bash
+# 의존성 설치
+pipenv install
+
+# 개발 의존성 포함 설치
+pipenv install --dev
+
+# 새 패키지 추가
+pipenv install <package-name>
+
+# 개발 패키지 추가
+pipenv install --dev <package-name>
+
+# 가상환경 활성화
+pipenv shell
+
+# 가상환경에서 스크립트 실행
+pipenv run python script.py
+
+# 의존성 그래프 확인
+pipenv graph
+
+# 의존성 업데이트
+pipenv update
+
+# 가상환경 제거
+pipenv --rm
+```
+
 ## 라이센스
 
 MIT License
@@ -547,6 +547,7 @@ GitHub: https://github.com/Vampirk/automation-platform
 
 ## 참고 자료
 
+- [Pipenv 공식 문서](https://pipenv.pypa.io/)
 - [FastAPI 공식 문서](https://fastapi.tiangolo.com/)
 - [APScheduler 문서](https://apscheduler.readthedocs.io/)
 - [SQLAlchemy 문서](https://docs.sqlalchemy.org/)
