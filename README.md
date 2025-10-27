@@ -354,6 +354,110 @@ sqlite3 data/automation.db "SELECT * FROM system_metrics ORDER BY timestamp DESC
 ## 프로젝트 구조
 ```
 automation-platform/
+├── main.py                         # 메인 진입점
+├── register_jobs.py                # 작업 등록 스크립트
+├── Pipfile                         # Pipenv 의존성 정의
+├── Pipfile.lock                    # Pipenv 잠금 파일
+├── .env                            # 환경 변수
+├── .env.example                    # 환경 변수 템플릿
+├── start-dashboard.sh              # 대시보드 시작 스크립트 (Linux/Mac)
+├── start-dashboard.bat             # 대시보드 시작 스크립트 (Windows)
+│
+├── config/                         # 설정 관리
+│   ├── __init__.py
+│   └── settings.py                # Pydantic 기반 설정
+│
+├── core/                           # 핵심 엔진
+│   ├── __init__.py
+│   ├── logger.py                  # 로깅 시스템 (loguru)
+│   ├── scheduler.py               # 작업 스케줄러 (APScheduler)
+│   └── executor.py                # 작업 실행기
+│
+├── storage/                        # 데이터 저장
+│   ├── __init__.py
+│   ├── database.py                # DB 연결 관리
+│   └── models.py                  # 데이터 모델 (SQLAlchemy ORM)
+│
+├── scripts/                        # 자동화 스크립트
+│   ├── monitoring/                # 시스템 모니터링
+│   │   ├── __init__.py
+│   │   ├── system_monitor.py     # CPU/메모리/디스크 모니터링
+│   │   └── README.md
+│   │
+│   ├── security/                  # 보안 점검
+│   │   ├── __init__.py
+│   │   ├── security_checker.py   # 종합 보안 점검
+│   │   ├── port_scanner.py       # 포트 스캔
+│   │   ├── permission_checker.py # 파일 권한 검사
+│   │   ├── test_security.sh      # 자동화 테스트 스크립트
+│   │   └── README.md
+│   │
+│   ├── log_analysis/              # 로그 분석
+│   │   ├── __init__.py
+│   │   ├── log_analyzer.py       # 실시간 로그 감시
+│   │   ├── pattern_detector.py   # 이상 패턴 탐지
+│   │   ├── report_generator.py   # 리포트 생성
+│   │   ├── quick_test.sh         # 빠른 테스트 스크립트
+│   │   ├── test_log_analysis.sh  # 전체 테스트 스크립트
+│   │   ├── TEST_GUIDE.md
+│   │   └── README.md
+│   │
+│   └── account_mgmt/              # 계정 관리
+│       ├── __init__.py
+│       ├── account_checker.py    # 계정 정책 검사
+│       ├── inactive_finder.py    # 장기 미사용 계정 탐지
+│       └── README.md
+│
+├── dashboard/                      # 웹 대시보드
+│   ├── api/                       # REST API (FastAPI)
+│   │   ├── __init__.py
+│   │   ├── main.py               # FastAPI 메인 서버
+│   │   ├── dependencies.py       # 공통 의존성 (DB 세션)
+│   │   ├── schemas.py            # Pydantic 스키마
+│   │   ├── jobs.py               # 작업 관리 API
+│   │   ├── monitoring.py         # 모니터링 API
+│   │   ├── start_api.sh          # API 서버 시작 (Linux/Mac)
+│   │   ├── start_api.bat         # API 서버 시작 (Windows)
+│   │   └── README.md
+│   │
+│   └── frontend/                  # 프론트엔드
+│       ├── index.html            # 메인 HTML
+│       ├── style.css             # 스타일시트
+│       ├── app.js                # JavaScript (API 연동)
+│       └── README.md
+│
+├── logs/                           # 로그 파일
+│   └── automation.log
+│
+├── data/                           # 데이터베이스 파일
+│   └── automation.db              # SQLite 데이터베이스
+│
+├── reports/                        # 생성된 리포트
+│   ├── logs/                      # 로그 분석 리포트
+│   └── security/                  # 보안 점검 리포트
+│
+├── LICENSE                         # 라이센스 파일
+├── README.md                       # 프로젝트 문서 (이 파일)
+├── PROJECT_SUMMARY.md              # 프로젝트 요약
+└── SCRIPT_TEST_STATUS.md           # 테스트 현황
+```
+
+### 주요 파일 설명
+
+**루트 디렉토리**
+- `main.py`: 스케줄러를 실행하는 메인 진입점
+- `register_jobs.py`: 사전 정의된 작업을 데이터베이스에 등록
+- `start-dashboard.sh/bat`: 프론트엔드와 백엔드를 동시에 실행하는 통합 스크립트
+
+**설정 및 핵심**
+- `config/settings.py`: 환경 변수 기반 설정 관리 (Pydantic)
+- `core/scheduler.py`: APScheduler 기반 작업 스케줄링
+- `core/executor.py`: 스크립트 실행 및 결과 기록
+- `core/logger.py`: 구조화된 로깅 시스템
+
+**데이터 저장**# 프로젝트 구조
+```
+automation-platform/
 ├── main.py                     # 메인 진입점
 ├── register_jobs.py            # 작업 등록 스크립트
 ├── config/                     # 설정 관리
@@ -407,7 +511,12 @@ automation-platform/
 ├── .env                        # 환경 변수
 ├── requirements.txt            # Python 의존성
 └── README.md
-```
+```스트 (10개)
+
+**생성 디렉토리**
+- `logs/`: 애플리케이션 로그 파일 저장
+- `data/`: SQLite 데이터베이스 파일 저장
+- `reports/`: 자동 생성된 리포트 저장 (로그 분석, 보안 점검)
 
 ## 구현 현황
 
